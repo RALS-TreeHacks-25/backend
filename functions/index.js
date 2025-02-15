@@ -2,10 +2,12 @@ const { Client } = require("@elastic/elasticsearch");
 
 const functions = require('firebase-functions');
 const users = require('./crud/users')
-const entries = require('./crud/entries')
+const journals = require('./crud/journals')
 
 exports.users = functions.https.onRequest(users.users)
-exports.entries = functions.https.onRequest(entries.entries)
+exports.journals = functions.https.onRequest(journals.journals)
+
+// IGNORE THIS
 
 require('dotenv').config({ path: '../secrets/.env' });
 

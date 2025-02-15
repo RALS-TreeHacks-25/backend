@@ -63,13 +63,4 @@ users.delete('/deleteUser', (req, res) => {
     .catch(error => res.status(500).json({ error: error.message }));
 });
 
-users.post('/createJournal', async (req, res) => {
-    try{
-        await db.collection('users').doc(req.body.uid).set(req.body)
-        res.status(200).json({message: "journal created successfully!"})
-    } catch(error){
-        res.status(500).json(error)
-    }
-})
-
 exports.users = users

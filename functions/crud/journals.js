@@ -2,17 +2,18 @@ const express = require('express');
 const cors = require('cors')
 const admin = require('../firebase')
 
-const entries = express()
-entries.use(cors({origin: true}))
+const journals = express()
+journals.use(cors({origin: true}))
 
 db = admin.firestore()
 
 
-entries.post('/createEntry', async (req, res) => {
+journals.post('/createJournal', async (req, res) => {
     try{
         console.log("hello", req.body)
-        await db.collection('entries').doc(req.body.uid).set(req.body)
+        await db.collection('journals').add(req.body)
         res.status(200).json({message: "entry created on firestore successfully!"})
+        
         const client = new Client({
             node: process.env.ELASTIC_ENDPOINT,
             auth: {
@@ -35,4 +36,4 @@ entries.post('/createEntry', async (req, res) => {
 
 
 
-exports.entries = entries
+exports.journals = journals
