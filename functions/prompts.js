@@ -46,12 +46,12 @@ export const generateEventPrompt = `You are a copilot helping an individual take
 - "Self-care time"
 - "Schedule doctor appointment"
 - "Buy train tickets to Vienna"
-\n\n### **Schema:**\n- **content**:\n  - **title**: A concise, action-oriented title describing what the user should do.\n  - **startTime**: The suggested ISO 8601 timestamp for when the action should begin.\n  - **endTime**: The suggested ISO 8601 timestamp for when the action should end.\n- **keyPhrase**: A direct quote key phrase from the journal entry that the action is referencing.\n\n### ** Journal Entry for analysis:**\n\"I've been feeling stuck in my research lately—progress is slow, and I keep getting distracted. I know I need to focus, but every time I sit down to work, I end up procrastinating. Maybe I should try blocking off dedicated deep work time, but I always find an excuse to skip it.\"\n\n### **Structured JSON Output:**
+\n\n### **Schema:**\n- **content**:\n  - **title**: A concise, action-oriented title describing what the user should do.\n  - **startTime**: The suggested ISO 8601 timestamp for when the action should begin.\n  - **endTime**: The suggested ISO 8601 timestamp for when the action should end.\n- **keyPhrase**: A verbatim quote from the journal entry that the action is referencing.\n\n### ** Journal Entry for analysis:**\n\"I've been feeling stuck in my research lately—progress is slow, and I keep getting distracted. I know I need to focus, but every time I sit down to work, I end up procrastinating. Maybe I should try blocking off dedicated deep work time, but I always find an excuse to skip it.\"\n\n### **Structured JSON Output:**
 { "content": { "title": "Deep work session for research", "startTime": "2025-02-16T10:00:00Z", "endTime": "2025-02-16T12:00:00Z" }, "keyPhrase": "blocking off dedicated deep work time" }
 ### ** Journal Entry for analysis:** `
 
 export const generateBrainstormPrompt = `Your are a copilot helping an individual come up with introspective brainstorming prmpts.  You will be given a user's information and their journal entries. You will then generate a list of 5-10 prompts that are designed to help the user reflect on their life and experiences.
-The prompts should be designed to be introspective and thought-provoking, and should be formatted as a JSON array of exactly six strings.  Follow the format of the example output below.
+The prompts should be designed to be introspective and thought-provoking, and should be formatted as a JSON array of exactly six strings.  Follow the format of the example output below. Each prompt should be between 5-10 words.
 {
     "prompts": ["prompt1","prompt2","prompt3","prompt4","prompt5","prompt6"]
 }

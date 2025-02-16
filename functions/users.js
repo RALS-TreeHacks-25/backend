@@ -66,15 +66,19 @@ users.delete('/deleteUser', (req, res) => {
 
 users.get("/getUsersCarousel/", async (req, res) => {
   try{
-  const prompt = await getUserBrainstormPrompt(req.query.user);
-  console.log("prompt: ", prompt);
-  const response = await askMistral(prompt);
-  console.log("response: ", response);
-  const prompts = JSON.parse(response);
-  console.log("prompts: ", prompts);
-  res.status(200).json(prompts);
+    let prompt = await getUserBrainstormPrompt(req.query.user);
+    console.log("prompt: ", prompt);
+    let response = await askMistral(prompt);
+    console.log("response 123: ", response);
+    // parse out ```json and ``` from the string
+    response = response.replace("```json", "").replace("```", "");
+    
+    let prompts = JSON.parse(response);
+    console.log("prompts: ", prompts);
+    res.status(200).json(prompts);
   } catch(error){
     res.status(500).json(error);
+    console.log("error: ", error);
   }
 });
 
