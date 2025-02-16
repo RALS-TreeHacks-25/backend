@@ -10,7 +10,7 @@ export const generateKeywordPhrasesPrompt = `Your job is to analyze a journal en
 3. Relevance to Past Entries: The selected phrases must relate to topics, emotions, or experiences that appeared in previous journal entries. These could be explicit connections (e.g., revisiting a place) or implicit ones (e.g., themes of work frustration, personal growth, or creative expression).
 4. Strict Output Format: Return exactly 1 to 3 keyword phrases. Make the explanation in 2nd person guiding the user. Return nothing except the JSON dictionary.
 Example Output Format:
-['keyphase1', 'keyphrase2', 'keyphrase3']
+["keyphase1", "keyphrase2", "keyphrase3"]
 
 
 ### Previous Journal Entries for Context:

@@ -115,7 +115,7 @@ journals.post('/createJournal', async (req, res) => {
         });
 
         // throw it inside the vector db
-        createDoc(journalDocument.id, req.body.text, journal.user)
+        await createDoc(journalDocument.id, req.body.text, journal.user)
 
         res.status(200).json({
             status: "success",
@@ -134,7 +134,7 @@ journals.post('/createJournal', async (req, res) => {
 
 // takes in user id in the body
 journals.get('/getJournalsByUser', async (req, res) => {
-    let user = req.body.user 
+    let user = req.body.user
     let journals = await db.collection('journals').where('user', '==', user).get();
     let journalsArray = [];
     journals.forEach(journal => {
