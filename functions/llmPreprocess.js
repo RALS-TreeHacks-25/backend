@@ -22,8 +22,6 @@ async function getJournals(user) {
     }
 }
 
-
-
 // creates a string with all previous journal entries
 export async function preprocessJournalsLLM(userId) {
     const journals = await getJournals(userId);
