@@ -1,18 +1,16 @@
-const express = require('express');
-const cors = require('cors')
-const admin = require('./firebase')
+import express from 'express';
+import cors from 'cors';
+import admin from './firebase.js';
 
-const { generateTitlePrompt, generateKeywordPhrasesPrompt, generateQuestionPrompt } = require('./prompts')
+import { generateTitlePrompt, generateKeywordPhrasesPrompt, generateQuestionPrompt } from './prompts.js';
+import { Client } from '@elastic/elasticsearch';
+//import { createDoc, searchKeyPhrase } from './rag';
+import { askMistral } from './mistral.js';
 
+const journals = express();
+journals.use(cors({origin: true}));
 
-const { Client } = require('@elastic/elasticsearch')
-
-const { createDoc } = require('./rag')
-
-const journals = express()
-journals.use(cors({origin: true}))
-
-db = admin.firestore()
+const db = admin.firestore();
 
 journals.post('/createJournal', async (req, res) => {
     /*
@@ -32,31 +30,37 @@ journals.post('/createJournal', async (req, res) => {
     */
     try {
         // completing the journal schema.
-        let journal = req.body
-        journal.ts = new Date().toISOString()
-        journal.title = await askMistral(generateTitlePrompt + journal.text)
-        journalDocument = await db.collection('journals').add(req.body)
+        let journal = req.body;
+        journal.ts = new Date().toISOString();
+        journal.title = await askMistral(generateTitlePrompt + journal.text);
+        const journalDocument = await db.collection('journals').add(req.body);
 
-        // throwing it inside the vector db
-        createDoc(journalDocument.id, req.body.text)
+        // Add the journal id to users.journals
+        await db.collection('users').doc(journal.user).update({
+            journals: admin.firestore.FieldValue.arrayUnion(journalDocument.id)
+        });
+
+        // TODO: throw it inside the vector db
+        //createDoc(journalDocument.id, req.body.text)
         
-        annotations = []
+        let annotations = []
 
         // lets start the agentic workflows
 
         // getting connected entries:
-        let keywordPhrasesString = await askMistral(generateKeywordPhrasesPrompt + journal.text)
+        let keywordPhrasesString = await askMistral(generateKeywordPhrasesPrompt + journal.text);
         // Convert string response into array by parsing the string
         // Assuming the response is in the format: ['phrase1', 'phrase2', 'phrase3']
         let keywordPhrases = JSON.parse(keywordPhrasesString);
 
         for (let phrase of keywordPhrases) {
-            connectedJournalId = await searchKeyPhrase(phrase, 0.9)
+            // TODO: implement the searchKeyPhrase function
+            // const connectedJournalId = await searchKeyPhrase(phrase, 0.7);
+            const connectedJournalId = "123journalID"
             if (connectedJournalId) {
-                let connectedJournalDocument = await db.collection('journals').doc(connectedJournalId).get()
                 annotations.push({
-                    journalId: journalDocument.id,
-                    content: connectedJournalDocument.id,
+                    id: journalDocument.id,
+                    content: connectedJournalId,
                     keyPhrase: phrase,
                     type: "connection"
                 })
@@ -64,25 +68,43 @@ journals.post('/createJournal', async (req, res) => {
         }
 
         // question generation annotations
-        let question = await askMistral(generateQuestionPrompt + journal.text)
-        question = JSON.parse(question)
+        let questionRes = await askMistral(generateQuestionPrompt + journal.text);
+        questionRes = JSON.parse(questionRes);
         annotations.push({
-            journalId: journalDocument.id,
-            content: question.content,
-            keyPhrase: question.keyPhrase,
+            id: journalDocument.id,
+            content: questionRes.content,
+            keyPhrase: questionRes.keyPhrase,
             type: "question"
-        })
+        });
+
+        // TODO: add events extraction to the annotation set
+
+        // updating the journal document with the annotations
+        await db.collection('journals').doc(journalDocument.id).update({
+            annotations: annotations,
+            id: journalDocument.id
+        });
+
+        res.status(200).json({
+            status: "success",
+            ts: new Date().toISOString(),
+            id: journalDocument.id,
+            user: journal.user,
+            title: journal.title,
+            text: journal.text,
+            annotations: annotations
+        });
     } catch(error) {
         console.error('Create error:', error);
-        res.status(500).json(error)
+        res.status(500).json(error);
     }
-})
+});
 
 journals.get('/getJournals', async (req, res) => {
     try {
-        keyPhrase = req.query.keyPhrase
-        console.log("keyPhrase: ", keyPhrase)
-        console.log("Elasticsearch endpoint:", process.env.ELASTIC_ENDPOINT)
+        const keyPhrase = req.query.keyPhrase;
+        console.log("keyPhrase: ", keyPhrase);
+        console.log("Elasticsearch endpoint:", process.env.ELASTIC_ENDPOINT);
 
         const client = new Client({
             node: process.env.ELASTIC_ENDPOINT,
@@ -148,9 +170,8 @@ journals.get('/getJournals', async (req, res) => {
         res.status(200).json(entries);
     } catch(error) {
         console.error('Search error:', error);
-        res.status(500).json(error)
+        res.status(500).json(error);
     }
-})
+});
 
-
-exports.journals = journals
+export { journals };

@@ -7,17 +7,19 @@ import path from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../secrets/.env') });
 
-async function askMistral(prompt) {
-  const apiKey = process.env.MISTRAL_API_KEY;
-  
-  const client = new Mistral({apiKey: apiKey});
-  
-  const chatResponse = await client.chat.complete({
-    model: 'mistral-large-latest',
-    messages: [{role: 'user', content: prompt}],
-  });
-  
-  return chatResponse.choices[0].message.content;
-}
+// Initialize Mistral client
+const mistral = new Mistral(process.env.MISTRAL_API_KEY);
 
-module.exports = { askMistral }
+// Add the askMistral function
+export async function askMistral(prompt) {
+    try {
+        const response = await mistral.chat.complete({
+            model: "mistral-tiny",
+            messages: [{ role: "user", content: prompt }],
+        });
+        return response.choices[0].message.content;
+    } catch (error) {
+        console.error('Error calling Mistral API:', error);
+        throw error;
+    }
+}
