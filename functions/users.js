@@ -2,12 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import admin from './firebase.js';
 import { user } from 'firebase-functions/v1/auth';
+import { getUserBrainstormPrompt } from './llmPreprocess.js';
+import { askMistral } from './mistral.js';
 
 const users = express()
 users.use(cors({origin: true}))
 
 const db = admin.firestore()
-
 
 users.post('/createUser', async (req, res) => {
     try{
@@ -30,7 +31,7 @@ users.get('/getUsers', (req, res) => {
 });
 
 // Read a single user
-users.post('/getUser', (req, res) => {
+users.post('/getUser/', (req, res) => {
   const itemId = req.body.uid;
   db.collection('users').doc(itemId).get()
     .then(doc => {
@@ -61,6 +62,20 @@ users.delete('/deleteUser', (req, res) => {
   db.collection('users').doc(itemId).delete()
     .then(() => res.status(200).json({ message: 'Item deleted successfully' }))
     .catch(error => res.status(500).json({ error: error.message }));
+});
+
+users.get("/getUsersCarousel/", async (req, res) => {
+  try{
+  const prompt = await getUserBrainstormPrompt(req.query.user);
+  console.log("prompt: ", prompt);
+  const response = await askMistral(prompt);
+  console.log("response: ", response);
+  const prompts = JSON.parse(response);
+  console.log("prompts: ", prompts);
+  res.status(200).json(prompts);
+  } catch(error){
+    res.status(500).json(error);
+  }
 });
 
 export { users }
