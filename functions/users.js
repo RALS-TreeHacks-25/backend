@@ -1,12 +1,12 @@
-const express = require('express');
-const cors = require('cors')
-const admin = require('./firebase');
-const { user } = require('firebase-functions/v1/auth');
+import express from 'express';
+import cors from 'cors';
+import admin from './firebase.js';
+import { user } from 'firebase-functions/v1/auth';
 
 const users = express()
 users.use(cors({origin: true}))
 
-db = admin.firestore()
+const db = admin.firestore()
 
 
 users.post('/createUser', async (req, res) => {
@@ -63,4 +63,4 @@ users.delete('/deleteUser', (req, res) => {
     .catch(error => res.status(500).json({ error: error.message }));
 });
 
-exports.users = users
+export { users }
