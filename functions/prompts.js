@@ -50,3 +50,9 @@ export const generateEventPrompt = `You are a copilot helping an individual take
 { "content": { "title": "Deep work session for research", "startTime": "2025-02-16T10:00:00Z", "endTime": "2025-02-16T12:00:00Z" }, "keyPhrase": "blocking off dedicated deep work time" }
 ### ** Journal Entry for analysis:** Took a long walk around campus today, just wandering with no particular destination. I ended up discovering this quiet little spot near the art building, where someone had set up a hammock between two trees. I just sat there for a while, watching people pass by, and it was one of the most peaceful moments I’ve had in a while. I should do this more often—just go somewhere new with no agenda and let myself be present.\n\n### **Structured JSON Output:**`
 
+export const generateBrainstormPrompt = `Your are a copilot helping an individual come up with introspective brainstorming prmpts.  You will be given a user's information and their journal entries. You will then generate a list of 5-10 prompts that are designed to help the user reflect on their life and experiences.
+The prompts should be designed to be introspective and thought-provoking, and should be formatted as a JSON array of exactly six strings.  Follow the format of the example output below.
+{
+    "prompts": ["prompt1","prompt2","prompt3","prompt4","prompt5","prompt6"]
+}
+`

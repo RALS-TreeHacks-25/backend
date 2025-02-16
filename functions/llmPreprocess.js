@@ -1,6 +1,6 @@
 import admin from './firebase.js';
 
-import { generateKeywordPhrasesPrompt, generateQuestionPrompt, generateEventPrompt } from './prompts.js';
+import { generateKeywordPhrasesPrompt, generateQuestionPrompt, generateEventPrompt, generateBrainstormPrompt } from './prompts.js';
 import { Client } from '@elastic/elasticsearch';
 import { createDoc, searchKeyPhrase } from './rag.js';
 import { askMistral } from './mistral.js';
@@ -22,8 +22,15 @@ async function getJournals(user) {
     }
 }
 
+// creates a string with all previous journal entries
+export async function preprocessJournalsLLM(userId) {
+    const journals = await getJournals(userId);
+    // between each journal should be the title of the entry as well
+    const journalString = journals.map(journal => `${journal.title}\n${journal.text}`).join("\n\n");
+    return journalString;
+}
 
-async function prepareUserInfo(userId){
+export async function prepareUserInfo(userId){
     try {
         const userDoc = await db.collection('users').doc(userId).get();
         user = userDoc.data();
@@ -35,16 +42,9 @@ async function prepareUserInfo(userId){
     }
 }
 
-export async function preprocessUserInfo(userId) {
+export async function getUserBrainstormPrompt(userId){
     const userInfo = await prepareUserInfo(userId);
-    const userInfoString = `Here is some information about the user who's journal you are analyzing: ${userInfo.name}, ${userInfo.age}, ${userInfo.dob}, ${userInfo.location}`;
-    return userInfoString;
-}
-
-// creates a string with all previous journal entries
-export async function preprocessJournalsLLM(userId) {
-    const journals = await getJournals(userId);
-    // between each journal should be the title of the entry as well
-    const journalString = journals.map(journal => `${journal.title}\n${journal.text}`).join("\n\n");
-    return journalString;
+    const journalString = await preprocessJournalsLLM(userId);
+    const prompt = generateBrainstormPrompt + "\n\n" + userInfo + "\n\n" + "User journal entries:\n" + journalString;
+    return prompt;
 }

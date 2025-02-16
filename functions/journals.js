@@ -54,6 +54,7 @@ journals.post('/createJournal', async (req, res) => {
             + "\n\n" + "### Current Journal Entry for Analysis:\n" + journal.text + 
             "\n\n" + "Now, extract and return 1-3 keyword phrases in the required JSON format. Response:");
         const keywordPhrasesString = await askMistral(keywordPhrasesPromptComplete);
+        
         // Convert string response into array by parsing the string
         // Assuming the response is in the format: ['phrase1', 'phrase2', 'phrase3']
         let keywordPhrases;
@@ -128,6 +129,18 @@ journals.post('/createJournal', async (req, res) => {
         });
     } catch(error) {
         console.error('Create error:', error);
+        res.status(500).json(error);
+    }
+});
+
+journals.get('/getJournalById', async (req, res) => {
+    const journalId = req.query.journal;
+    console.log("journalId: ", journalId);
+    try {
+        const journal = await db.collection('journals').doc(journalId).get();
+        res.status(200).json(journal.data());
+    } catch(error) {
+        console.error('Get journal error:', error);
         res.status(500).json(error);
     }
 });
