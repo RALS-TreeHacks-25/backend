@@ -6,7 +6,7 @@ import { generateTitlePrompt, generateKeywordPhrasesPrompt, generateQuestionProm
 import { Client } from '@elastic/elasticsearch';
 import { createDoc, searchKeyPhrase } from './rag.js';
 import { askMistral } from './mistral.js';
-import { preprocessJournalsLLM } from './llmPreprocess.js';
+import { preprocessJournalsLL, preprocessUserInfo } from './llmPreprocess.js';
 
 const journals = express();
 journals.use(cors({origin: true}));
@@ -48,7 +48,9 @@ journals.post('/createJournal', async (req, res) => {
         // getting connected entries:
         const prevJournalsString = await preprocessJournalsLLM(journal.user);
         console.log("prevJournalsString: ", prevJournalsString);
-        const keywordPhrasesPromptComplete = (generateKeywordPhrasesPrompt + "\n\n" + prevJournalsString
+        const userInfoString = await preprocessUserInfo(journal.user);
+        console.log("userInfoString: ", userInfoString);
+        const keywordPhrasesPromptComplete = (userInfoString + "\n\n" + generateKeywordPhrasesPrompt + "\n\n" + prevJournalsString
             + "\n\n" + "### Current Journal Entry for Analysis:\n" + journal.text + 
             "\n\n" + "Now, extract and return 1-3 keyword phrases in the required JSON format. Response:");
         const keywordPhrasesString = await askMistral(keywordPhrasesPromptComplete);
@@ -76,7 +78,7 @@ journals.post('/createJournal', async (req, res) => {
         }
 
         // question generation annotations
-        let questionRes = await askMistral(generateQuestionPrompt + journal.text);
+        let questionRes = await askMistral(userInfoString + "\n\n" + generateQuestionPrompt + journal.text);
         console.log("questionRes: ", questionRes);
         try {
             questionRes = JSON.parse(questionRes);
@@ -91,7 +93,7 @@ journals.post('/createJournal', async (req, res) => {
         });
 
         // TODO: add events extraction to the annotation set
-        let eventRes = await askMistral(generateEventPrompt + journal.text);
+        let eventRes = await askMistral(userInfoString + "\n\n" + generateEventPrompt + journal.text);
         console.log("eventRes: ", eventRes);
         try {
             eventRes = JSON.parse(eventRes);

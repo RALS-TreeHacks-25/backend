@@ -22,6 +22,25 @@ async function getJournals(user) {
     }
 }
 
+
+async function prepareUserInfo(userId){
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        user = userDoc.data();
+        userInfo = `User Info: ${user.name}, ${user.age}, ${user.gender}, ${user.location}`;
+        return userInfo;
+    }
+    catch (error) {
+        console.log("error with getting user info");
+    }
+}
+
+export async function preprocessUserInfo(userId) {
+    const userInfo = await prepareUserInfo(userId);
+    const userInfoString = `Here is some information about the user who's journal you are analyzing: ${userInfo.name}, ${userInfo.age}, ${userInfo.dob}, ${userInfo.location}`;
+    return userInfoString;
+}
+
 // creates a string with all previous journal entries
 export async function preprocessJournalsLLM(userId) {
     const journals = await getJournals(userId);
