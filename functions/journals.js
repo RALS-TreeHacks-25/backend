@@ -4,7 +4,7 @@ import admin from './firebase.js';
 
 import { generateTitlePrompt, generateKeywordPhrasesPrompt, generateQuestionPrompt } from './prompts.js';
 import { Client } from '@elastic/elasticsearch';
-//import { createDoc, searchKeyPhrase } from './rag';
+import { createDoc, searchKeyPhrase } from './rag.js';
 import { askMistral } from './mistral.js';
 
 const journals = express();
@@ -40,9 +40,6 @@ journals.post('/createJournal', async (req, res) => {
             journals: admin.firestore.FieldValue.arrayUnion(journalDocument.id)
         });
 
-        // TODO: throw it inside the vector db
-        //createDoc(journalDocument.id, req.body.text)
-        
         let annotations = []
 
         // lets start the agentic workflows
@@ -54,9 +51,8 @@ journals.post('/createJournal', async (req, res) => {
         let keywordPhrases = JSON.parse(keywordPhrasesString);
 
         for (let phrase of keywordPhrases) {
-            // TODO: implement the searchKeyPhrase function
-            // const connectedJournalId = await searchKeyPhrase(phrase, 0.7);
-            const connectedJournalId = "123journalID"
+            console.log("phrase: ", phrase);
+            const connectedJournalId = await searchKeyPhrase(phrase, 0.7);
             if (connectedJournalId) {
                 annotations.push({
                     id: journalDocument.id,
@@ -84,6 +80,9 @@ journals.post('/createJournal', async (req, res) => {
             annotations: annotations,
             id: journalDocument.id
         });
+
+        // throw it inside the vector db
+        createDoc(journalDocument.id, req.body.text)
 
         res.status(200).json({
             status: "success",
