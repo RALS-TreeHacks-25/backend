@@ -33,7 +33,9 @@ journals.post('/createJournal', async (req, res) => {
         // completing the journal schema.
         let journal = req.body;
         journal.ts = new Date().toISOString();
-        journal.title = await askMistral(generateTitlePrompt + journal.text);
+        let titleRes = await askMistral(generateTitlePrompt + journal.text);
+        // remove all "" from the titleRes without changing the rest of the string
+        journal.title = titleRes.replace(/"/g, "");
         const journalDocument = await db.collection('journals').add(req.body);
 
         // Add the journal id to users.journals
@@ -79,19 +81,34 @@ journals.post('/createJournal', async (req, res) => {
         }
 
         // question generation annotations
-        let questionRes = await askMistral(userInfoString + "\n\n" + generateQuestionPrompt + journal.text);
-        console.log("questionRes: ", questionRes);
-        try {
-            questionRes = JSON.parse(questionRes);
-        } catch (error) {
-            console.log("error with parsing questionRes: ", error);
+        async function generateQuestion(userInfoString, journal, retries = 2) {
+            if (retries <= 0) {
+                console.log("Max retries reached for question generation");
+                return null;
+            }
+
+            let questionRes = await askMistral(userInfoString + "\n\n" + generateQuestionPrompt + journal.text);
+            console.log("questionRes: ", questionRes);
+            
+            try {
+                questionRes = JSON.parse(questionRes);
+                return questionRes;
+            } catch (error) {
+                console.log("error with parsing questionRes: ", error);
+                console.log(": ", retries);
+                return await generateQuestion(userInfoString, journal, retries - 1);
+            }
         }
-        annotations.push({
-            id: journalDocument.id,
-            content: questionRes.content,
-            keyPhrase: questionRes.keyPhrase,
-            type: "question"
-        });
+
+        let questionRes = await generateQuestion(userInfoString, journal);
+        if (questionRes.content) {
+            annotations.push({
+                id: journalDocument.id,
+                content: questionRes.content,
+                keyPhrase: questionRes.keyPhrase,
+                type: "question"
+            });
+        }
 
         // TODO: add events extraction to the annotation set
         let eventRes = await askMistral(userInfoString + "\n\n" + generateEventPrompt + journal.text);
@@ -101,12 +118,14 @@ journals.post('/createJournal', async (req, res) => {
         } catch (error) {
             console.log("error with parsing eventRes: ", error);
         }
-        annotations.push({
-            id: journalDocument.id,
-            content: eventRes.content,
-            keyPhrase: eventRes.keyPhrase,
-            type: "action"
-        });
+        if (eventRes.content) {
+            annotations.push({
+                id: journalDocument.id,
+                content: eventRes.content,
+                keyPhrase: eventRes.keyPhrase,
+                type: "action"
+            });
+        }
         
         console.log("annotations: ", annotations);
         // updating the journal document with the annotations
