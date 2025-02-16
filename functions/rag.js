@@ -35,14 +35,18 @@ async function getEmbeddings(text){
     
 }
 
-export async function createDoc(firebaseId, text){
+export async function createDoc(firebaseId, text, userId){
     const embeddingResponse = await getEmbeddings(text);
     console.log("gotten embedding: ", embeddingResponse);
     const documentWithEmbedding = {
         text: text,
         embedding: embeddingResponse,
         id: firebaseId,
+        userId: userId,
     };
+
+    console.log("document with embedding:");
+    console.log(documentWithEmbedding);
 
     try {
         const res = await elasticClient.index({
@@ -58,7 +62,7 @@ export async function createDoc(firebaseId, text){
 }
 
 
-export async function searchKeyPhrase(keyphrase, threshold) {
+export async function searchKeyPhrase(keyphrase, threshold, userId) {
     const keyphraseVector = await getEmbeddings(keyphrase);
     try {
         const searchResponse = await elasticClient.search({
@@ -67,8 +71,11 @@ export async function searchKeyPhrase(keyphrase, threshold) {
                 query: {
                     script_score: {
                         query: {
-                            exists: {
-                                field: "embedding"
+                            bool: {
+                                must: [
+                                    { term: { userId: userId } },
+                                    { exists: { field: "embedding" } }
+                                ]
                             }
                         },
                         script: {

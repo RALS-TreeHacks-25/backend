@@ -52,7 +52,7 @@ journals.post('/createJournal', async (req, res) => {
 
         for (let phrase of keywordPhrases) {
             console.log("phrase: ", phrase);
-            const connectedJournalId = await searchKeyPhrase(phrase, 0.7);
+            const connectedJournalId = await searchKeyPhrase(phrase, 0.7, journal.user);
             if (connectedJournalId) {
                 annotations.push({
                     id: journalDocument.id,
@@ -82,7 +82,7 @@ journals.post('/createJournal', async (req, res) => {
         });
 
         // throw it inside the vector db
-        createDoc(journalDocument.id, req.body.text)
+        createDoc(journalDocument.id, req.body.text, journal.user)
 
         res.status(200).json({
             status: "success",
@@ -99,10 +99,28 @@ journals.post('/createJournal', async (req, res) => {
     }
 });
 
-journals.get('/getJournals', async (req, res) => {
+// takes in user id in the body
+journals.get('/getJournalsByUser', async (req, res) => {
+    let user = req.body.user 
+    let journals = await db.collection('journals').where('user', '==', user).get();
+    let journalsArray = [];
+    journals.forEach(journal => {
+        journalsArray.push(journal.data());
+    });
+    res.status(200).json(journalsArray);
+});
+
+journals.get('/getJournalsSimSearch', async (req, res) => {
     try {
         const keyPhrase = req.query.keyPhrase;
+        const userId = req.query.userId;
+        
+        if (!userId) {
+            return res.status(400).json({ error: 'userId is required' });
+        }
+
         console.log("keyPhrase: ", keyPhrase);
+        console.log("userId: ", userId);
         console.log("Elasticsearch endpoint:", process.env.ELASTIC_ENDPOINT);
 
         const client = new Client({
@@ -139,8 +157,11 @@ journals.get('/getJournals', async (req, res) => {
                 query: {
                     script_score: {
                         query: {
-                            exists: {
-                                field: "embedding"
+                            bool: {
+                                must: [
+                                    { term: { userId: userId } },
+                                    { exists: { field: "embedding" } }
+                                ]
                             }
                         },
                         script: {
