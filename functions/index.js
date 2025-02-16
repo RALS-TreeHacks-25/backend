@@ -1,8 +1,8 @@
 const { Client } = require("@elastic/elasticsearch");
 
 const functions = require('firebase-functions');
-const users = require('./crud/users')
-const journals = require('./crud/journals')
+const users = require('./users')
+const journals = require('./journals')
 
 exports.users = functions.https.onRequest(users.users)
 exports.journals = functions.https.onRequest(journals.journals)

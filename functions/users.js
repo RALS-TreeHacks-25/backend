@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors')
-const admin = require('../firebase');
+const admin = require('./firebase');
 const { user } = require('firebase-functions/v1/auth');
 
 const users = express()

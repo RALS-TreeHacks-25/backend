@@ -1,0 +1,13 @@
+export const generateTitlePrompt = `
+Your job is to take journal entries from a user and generate a title for the journal entry.
+The title must be very short, as it is diplayed on a mobile app with a limited horizontal size.
+The title doesn't have to be a sentence, it can be a phrase. RETURN NOTHING EXCEPT THE TITLE. Here is the journal entry:`
+
+export const generateKeywordPhrasesPrompt = `
+Your job is to take journal entries from a user and generate a list of keyword phrases that are present in the journal entry.
+The keyword phrases must be relatively short, and they must be DIRECT QUOTES from the journal entry.
+The keyword phrases doesn't have to be a sentence, it can be a phrase, or it can be an entire sentence or two if needed.
+RETURN NOTHING EXCEPT THE KEYWORD PHRASES IN AN ARRAY. THERE CAN ONLY BE ONE OR TWO KEYWORD PHRASES IN THE ARRAY.
+Here is the journal entry:`
+
+export const generateQuestionPrompt = "You are a copilot helping an individual distill key insights from your life. Given a user's journal entry, generate a structured JSON output with the following fields:\n\n- **content**: A question that provokes deeper introspection or encourages further thinking based on the journal entry. The question should be open-ended and insightful.\n- **keyPhrase**: The verbatim text segment from the journal entry that the question is addressing.\n\nYou will be given a journal entry like this:\n\n\"Mom called yesterday to ask if I'm \"settling down\" soon, saying \"the right person will come along.\" I didn't tell her I've been on exactly two dates this year, both of which went nowhere.\n\nOne was a dinner where the conversation felt like a forced interview, all surface-level questions with no real spark. The other was a coffee meetup that fizzled out before the drinks were even finished. I don't know if I'm too picky, too distracted, or just uninterested in forcing something that doesn't feel right. Mom means well, but I don't think she understands how different dating feels now—how exhausting it can be to keep swiping, making small talk, and hoping for some elusive connection. Not quite sure what to do.\"\n\nOutput should look like this example:\n\n```json\n{{\"content\": \"How did the acknowledgment from your team and the PM make you feel, and how does it motivate you for future challenges?\", \n \"keyPhrase\": \"Even the PM acknowledged my work.\" \n}}\n```\n\nThe goal is to help the user explore their thoughts further by reflecting on specific key phrases within their journal entry."

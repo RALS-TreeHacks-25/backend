@@ -1,63 +1,77 @@
 const express = require('express');
 const cors = require('cors')
-const admin = require('../firebase')
+const admin = require('./firebase')
+
+const { generateTitlePrompt, generateKeywordPhrasesPrompt, generateQuestionPrompt } = require('./prompts')
+
+
 const { Client } = require('@elastic/elasticsearch')
+
+const { createDoc } = require('./rag')
 
 const journals = express()
 journals.use(cors({origin: true}))
 
 db = admin.firestore()
 
-
 journals.post('/createJournal', async (req, res) => {
+    /*
+    req.body = {
+        text: "text",
+        user: "user",
+    }
+    res.body = {
+        status: "success",
+        ts: ISOstr,
+        id: str,
+        user: uidstr,
+        title: str,
+        text: str,
+        annotations: [annotationsID]
+    }
+    */
     try {
-        await db.collection('journals').add(req.body)
+        // completing the journal schema.
+        let journal = req.body
+        journal.ts = new Date().toISOString()
+        journal.title = await askMistral(generateTitlePrompt + journal.text)
+        journalDocument = await db.collection('journals').add(req.body)
 
-        console.log("Request body:", req.body); // Log the incoming request
+        // throwing it inside the vector db
+        createDoc(journalDocument.id, req.body.text)
+        
+        annotations = []
 
-        // Generate embedding for the journal entry
-        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                input: req.body.text, // assuming your journal entry has a content field
-                model: "text-embedding-3-small"
-            })
-        });
+        // lets start the agentic workflows
 
-        const embeddingData = await embeddingResponse.json();
-        console.log("OpenAI API response:", embeddingData); // Log the OpenAI response
+        // getting connected entries:
+        let keywordPhrasesString = await askMistral(generateKeywordPhrasesPrompt + journal.text)
+        // Convert string response into array by parsing the string
+        // Assuming the response is in the format: ['phrase1', 'phrase2', 'phrase3']
+        let keywordPhrases = JSON.parse(keywordPhrasesString);
 
-        // Check if we have a valid response
-        if (!embeddingData.data || !embeddingData.data[0]) {
-            console.error('Invalid embedding response:', embeddingData);
-            return res.status(400).json({ 
-                error: 'Failed to generate embedding',
-                details: embeddingData
-            });
+        for (let phrase of keywordPhrases) {
+            connectedJournalId = await searchKeyPhrase(phrase, 0.9)
+            if (connectedJournalId) {
+                let connectedJournalDocument = await db.collection('journals').doc(connectedJournalId).get()
+                annotations.push({
+                    journalId: journalDocument.id,
+                    content: connectedJournalDocument.id,
+                    keyPhrase: phrase,
+                    type: "connection"
+                })
+            }
         }
 
-        const documentWithEmbedding = {
-            ...req.body,
-            embedding: embeddingData.data[0].embedding
-        };
-        
-        // Elasticsearch operation
-        const client = new Client({
-            node: process.env.ELASTIC_ENDPOINT,
-            auth: {
-                apiKey: process.env.ELASTIC_API_ENTRIES
-            }
-        });
-        const response = await client.index({
-            index: "entries",
-            document: documentWithEmbedding,
-        });
-
-        res.status(200).json({message: "entry created successfully!"})
+        // question generation annotations
+        let question = await askMistral(generateQuestionPrompt + journal.text)
+        question = JSON.parse(question)
+        annotations.push({
+            journalId: journalDocument.id,
+            content: question.content,
+            keyPhrase: question.keyPhrase,
+            type: "question"
+        })
     } catch(error) {
         console.error('Create error:', error);
         res.status(500).json(error)
