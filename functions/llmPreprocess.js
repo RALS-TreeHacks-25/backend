@@ -46,6 +46,8 @@ export async function prepareUserInfo(userId){
 export async function getUserBrainstormPrompt(userId){
     const userInfo = await prepareUserInfo(userId);
     const journalString = await preprocessJournalsLLM(userId);
-    const prompt = generateBrainstormPrompt + "\n\n" + userInfo + "\n\n" + "User journal entries:\n" + journalString;
+    let prompt = generateBrainstormPrompt + "\n\n" + userInfo + "\n\n" + "User journal entries:\n" + journalString;
+    // parse out ```json and ``` from the string
+    prompt = prompt.replace("```json", "").replace("```", "");
     return prompt;
 }

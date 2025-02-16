@@ -50,7 +50,7 @@ export async function createDoc(firebaseId, text, userId){
 
     try {
         const res = await elasticClient.index({
-            index: "journals",
+            index: "j2",
             document: documentWithEmbedding,
         });
     }
@@ -66,7 +66,7 @@ export async function searchKeyPhrase(keyphrase, threshold, userId) {
     const keyphraseVector = await getEmbeddings(keyphrase);
     try {
         const searchResponse = await elasticClient.search({
-            index: "journals",
+            index: "j2",
             body: {
                 query: {
                     script_score: {

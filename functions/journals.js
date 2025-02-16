@@ -52,15 +52,16 @@ journals.post('/createJournal', async (req, res) => {
         console.log("prevJournalsString: ", prevJournalsString);
         const userInfoString = await prepareUserInfo(journal.user);
         console.log("userInfoString: ", userInfoString);
-        const keywordPhrasesPromptComplete = (userInfoString + "\n\n" + generateKeywordPhrasesPrompt + "\n\n" + prevJournalsString
-            + "\n\n" + "### Current Journal Entry for Analysis:\n" + journal.text + 
+        const keywordPhrasesPromptComplete = (userInfoString + "\n\n" + generateKeywordPhrasesPrompt + "\n\n" + "### Current Journal Entry for Analysis:\n" + journal.text + 
             "\n\n" + "Now, extract and return 1-3 keyword phrases in the required JSON format. Response:");
-        const keywordPhrasesString = await askMistral(keywordPhrasesPromptComplete);
+        let keywordPhrasesString = await askMistral(keywordPhrasesPromptComplete);
         
         // Convert string response into array by parsing the string
         // Assuming the response is in the format: ['phrase1', 'phrase2', 'phrase3']
         let keywordPhrases;
         try {
+            // parse out ```json and ``` from the string
+            keywordPhrasesString = keywordPhrasesString.replace("```json", "").replace("```", "");
             keywordPhrases = JSON.parse(keywordPhrasesString);
         } catch (error) {
             console.log("error with parsing keywordPhrasesString: ", error);
@@ -91,6 +92,8 @@ journals.post('/createJournal', async (req, res) => {
             console.log("questionRes: ", questionRes);
             
             try {
+                // parse out ```json and ``` from the string
+                questionRes = questionRes.replace("```json", "").replace("```", "");
                 questionRes = JSON.parse(questionRes);
                 return questionRes;
             } catch (error) {
@@ -120,6 +123,8 @@ journals.post('/createJournal', async (req, res) => {
             console.log("eventRes: ", eventRes);
             
             try {
+                // parse out ```json and ``` from the string
+                eventRes = eventRes.replace("```json", "").replace("```", "");
                 eventRes = JSON.parse(eventRes);
                 return eventRes;
             } catch (error) {

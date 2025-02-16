@@ -14,7 +14,7 @@ const mistral = new Mistral(process.env.MISTRAL_API_KEY);
 export async function askMistral(prompt) {
     try {
         const response = await mistral.chat.complete({
-            model: "mistral-tiny",
+            model: "mistral-large-latest",
             messages: [{ role: "user", content: prompt }],
         });
         return response.choices[0].message.content;
