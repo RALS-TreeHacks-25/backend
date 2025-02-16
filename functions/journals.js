@@ -2,10 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import admin from './firebase.js';
 
-import { generateTitlePrompt, generateKeywordPhrasesPrompt, generateQuestionPrompt } from './prompts.js';
+import { generateTitlePrompt, generateKeywordPhrasesPrompt, generateQuestionPrompt, generateEventPrompt } from './prompts.js';
 import { Client } from '@elastic/elasticsearch';
 import { createDoc, searchKeyPhrase } from './rag.js';
 import { askMistral } from './mistral.js';
+import { preprocessJournalsLLM } from './llmPreprocess.js';
 
 const journals = express();
 journals.use(cors({origin: true}));
@@ -45,14 +46,25 @@ journals.post('/createJournal', async (req, res) => {
         // lets start the agentic workflows
 
         // getting connected entries:
-        let keywordPhrasesString = await askMistral(generateKeywordPhrasesPrompt + journal.text);
+        const prevJournalsString = await preprocessJournalsLLM(journal.user);
+        console.log("prevJournalsString: ", prevJournalsString);
+        const keywordPhrasesPromptComplete = (generateKeywordPhrasesPrompt + "\n\n" + prevJournalsString
+            + "\n\n" + "### Current Journal Entry for Analysis:\n" + journal.text + 
+            "\n\n" + "Now, extract and return 1-3 keyword phrases in the required JSON format. Response:");
+        const keywordPhrasesString = await askMistral(keywordPhrasesPromptComplete);
         // Convert string response into array by parsing the string
         // Assuming the response is in the format: ['phrase1', 'phrase2', 'phrase3']
-        let keywordPhrases = JSON.parse(keywordPhrasesString);
+        let keywordPhrases;
+        try {
+            keywordPhrases = JSON.parse(keywordPhrasesString);
+        } catch (error) {
+            console.log("error with parsing keywordPhrasesString: ", error);
+            keywordPhrases = [];
+        }
 
         for (let phrase of keywordPhrases) {
             console.log("phrase: ", phrase);
-            const connectedJournalId = await searchKeyPhrase(phrase, 0.7, journal.user);
+            const connectedJournalId = await searchKeyPhrase(phrase, 0.65, journal.user);
             if (connectedJournalId) {
                 annotations.push({
                     id: journalDocument.id,
@@ -65,7 +77,12 @@ journals.post('/createJournal', async (req, res) => {
 
         // question generation annotations
         let questionRes = await askMistral(generateQuestionPrompt + journal.text);
-        questionRes = JSON.parse(questionRes);
+        console.log("questionRes: ", questionRes);
+        try {
+            questionRes = JSON.parse(questionRes);
+        } catch (error) {
+            console.log("error with parsing questionRes: ", error);
+        }
         annotations.push({
             id: journalDocument.id,
             content: questionRes.content,
@@ -74,7 +91,21 @@ journals.post('/createJournal', async (req, res) => {
         });
 
         // TODO: add events extraction to the annotation set
-
+        let eventRes = await askMistral(generateEventPrompt + journal.text);
+        console.log("eventRes: ", eventRes);
+        try {
+            eventRes = JSON.parse(eventRes);
+        } catch (error) {
+            console.log("error with parsing eventRes: ", error);
+        }
+        annotations.push({
+            id: journalDocument.id,
+            content: eventRes.content,
+            keyPhrase: eventRes.keyPhrase,
+            type: "action"
+        });
+        
+        console.log("annotations: ", annotations);
         // updating the journal document with the annotations
         await db.collection('journals').doc(journalDocument.id).update({
             annotations: annotations,
