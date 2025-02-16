@@ -33,12 +33,13 @@ export async function preprocessJournalsLLM(userId) {
 export async function prepareUserInfo(userId){
     try {
         const userDoc = await db.collection('users').doc(userId).get();
-        user = userDoc.data();
-        userInfo = `User Info: ${user.name}, ${user.age}, ${user.gender}, ${user.location}`;
+        const user = userDoc.data();
+        const userInfo = `User Info. name: ${user.name}, date of birth: ${user.dob}, pronouns: ${user.pronouns}, city: ${user.city}, interests: ${user.interests}, bio: ${user.bio}`;
         return userInfo;
     }
     catch (error) {
         console.log("error with getting user info");
+        console.log(error);
     }
 }
 
