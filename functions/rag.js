@@ -71,12 +71,13 @@ export async function searchKeyPhrase(keyphrase, threshold, userId) {
                 query: {
                     script_score: {
                         query: {
-                            bool: {
-                                must: [
-                                    { term: { userId: userId } },
-                                    { exists: { field: "embedding" } }
-                                ]
-                            }
+                            // bool: {
+                            //     must: [
+                            //         { term: { userId: userId } },
+                            //         { exists: { field: "embedding" } }
+                            //     ]
+                            // }
+                            exists: { field: "embedding" }
                         },
                         script: {
                             source: "cosineSimilarity(params.query_vector, 'embedding')",
@@ -84,7 +85,7 @@ export async function searchKeyPhrase(keyphrase, threshold, userId) {
                         }
                     }
                 },
-                size: 1  // Limit to top 5 most similar results
+                size: 100  // Limit to top 5 most similar results
             }
         });
 

@@ -110,14 +110,26 @@ journals.post('/createJournal', async (req, res) => {
             });
         }
 
-        // TODO: add events extraction to the annotation set
-        let eventRes = await askMistral(userInfoString + "\n\n" + generateEventPrompt + journal.text);
-        console.log("eventRes: ", eventRes);
-        try {
-            eventRes = JSON.parse(eventRes);
-        } catch (error) {
-            console.log("error with parsing eventRes: ", error);
+        async function generateEvent(userInfoString, journal, retries = 2) {
+            if (retries <= 0) {
+                console.log("Max retries reached for event generation");
+                return null;
+            }
+
+            let eventRes = await askMistral(userInfoString + "\n\n" + generateEventPrompt + journal.text + "\n\n" + "### ** Journal Entry for analysis:**");
+            console.log("eventRes: ", eventRes);
+            
+            try {
+                eventRes = JSON.parse(eventRes);
+                return eventRes;
+            } catch (error) {
+                console.log("error with parsing eventRes: ", error);
+                console.log(": ", retries);
+                return await generateEvent(userInfoString, journal, retries - 1);
+            }
         }
+        
+        let eventRes = await generateEvent(userInfoString, journal);
         if (eventRes.content) {
             annotations.push({
                 id: journalDocument.id,
