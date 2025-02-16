@@ -6,7 +6,7 @@ import { generateTitlePrompt, generateKeywordPhrasesPrompt, generateQuestionProm
 import { Client } from '@elastic/elasticsearch';
 import { createDoc, searchKeyPhrase } from './rag.js';
 import { askMistral } from './mistral.js';
-import { preprocessJournalsLL, preprocessUserInfo } from './llmPreprocess.js';
+import { preprocessJournalsLLM, prepareUserInfo } from './llmPreprocess.js';
 
 const journals = express();
 journals.use(cors({origin: true}));
@@ -48,7 +48,7 @@ journals.post('/createJournal', async (req, res) => {
         // getting connected entries:
         const prevJournalsString = await preprocessJournalsLLM(journal.user);
         console.log("prevJournalsString: ", prevJournalsString);
-        const userInfoString = await preprocessUserInfo(journal.user);
+        const userInfoString = await prepareUserInfo(journal.user);
         console.log("userInfoString: ", userInfoString);
         const keywordPhrasesPromptComplete = (userInfoString + "\n\n" + generateKeywordPhrasesPrompt + "\n\n" + prevJournalsString
             + "\n\n" + "### Current Journal Entry for Analysis:\n" + journal.text + 
